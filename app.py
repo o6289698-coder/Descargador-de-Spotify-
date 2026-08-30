@@ -247,12 +247,10 @@ def procesar():
     out_template = f'/tmp/{batch_id}_%(title)s.%(ext)s'
 
     try:
-        # Obtenemos los metadatos públicos de Spotify mediante oEmbed de forma segura
         oembed_res = requests.get(f"https://open.spotify.com/oembed?url={url}", timeout=8).json()
         item_title = oembed_res.get('title', 'Audio Spotify')
         thumbnail = oembed_res.get('thumbnail_url', '')
 
-        # Consulta directa basada en el título obtenido para evitar bloqueos pesados de IP
         search_query = f"ytsearch1:{item_title} audio"
 
         ydl_opts = {
@@ -260,6 +258,8 @@ def procesar():
             'no_warnings': True,
             'outtmpl': out_template,
             'format': 'bestaudio/best',
+            # Forzamos el cliente de TV para evitar el aviso de "bot" en la nube
+            'extractor_args': {'youtube': {'player_client': ['tv', 'web_safari']}},
             'postprocessors': [{
                 'key': 'FFmpegExtractAudio',
                 'preferredcodec': 'mp3',
@@ -284,7 +284,6 @@ def procesar():
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 for file in downloaded_files:
                     zipf.write(file, os.path.basename(file))
-                    # Limpiamos los sueltos de inmediato
                     try:
                         os.remove(file)
                     except:
@@ -335,4 +334,4 @@ def download_file():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
-    
+        
