@@ -2,9 +2,9 @@ import os
 import shutil
 import uuid
 import zipfile
+import subprocess
 import requests
 from flask import Flask, render_template_string, request, jsonify, send_file, after_this_request
-import yt_dlp
 
 app = Flask(__name__)
 
@@ -14,7 +14,7 @@ HTML_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Descargador Multimedia & ZIP</title>
+    <title>Spotify Downloader & Playlist ZIP</title>
     <style>
         body { 
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -157,14 +157,13 @@ HTML_TEMPLATE = """
 </head>
 <body>
     <div class="container">
-        <h2>Descargador & ZIP</h2>
+        <h2>Spotify Downloader</h2>
         <form id="download-form">
-            <input type="text" id="url" placeholder="Pega enlace de Facebook, Spotify o lista..." required><br>
+            <input type="text" id="url" placeholder="Pega enlace de canción o playlist de Spotify..." required><br>
             <div style="display: flex; justify-content: center; gap: 5px;">
                 <select id="format">
-                    <option value="mp3">Audio MP3</option>
-                    <option value="mp4">Video MP4</option>
-                    <option value="zip">Archivo ZIP (Colección)</option>
+                    <option value="mp3">Canción MP3</option>
+                    <option value="zip">Playlist ZIP (Completa)</option>
                 </select>
                 <button type="submit">Procesar</button>
             </div>
@@ -185,7 +184,7 @@ HTML_TEMPLATE = """
         document.getElementById('download-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const resultDiv = document.getElementById('result');
-            resultDiv.innerHTML = "<span style='color: #38bdf8;'>Procesando y empaquetando... Espera un momento.</span>";
+            resultDiv.innerHTML = "<span style='color: #38bdf8;'>Procesando canciones de Spotify... Esto puede tomar unos segundos.</span>";
             
             const url = document.getElementById('url').value;
             const format = document.getElementById('format').value;
@@ -236,86 +235,81 @@ def procesar():
     url = data.get('url', '').strip()
     formato = data.get('format', 'mp3')
 
+    if "spotify.com" not in url:
+        return jsonify({'success': False, 'error': 'Por favor, introduce un enlace válido de Spotify.'})
+
     batch_id = str(uuid.uuid4())
-    out_template = f'/tmp/{batch_id}_%(title)s.%(ext)s'
-
-    target_url = url
-    if "spotify.com" in url:
-        try:
-            oembed_res = requests.get(f"https://open.spotify.com/oembed?url={url}").json()
-            song_title = oembed_res.get('title', 'Musica Spotify')
-            target_url = f"ytsearch1:{song_title} audio"
-        except Exception:
-            return jsonify({'success': False, 'error': 'No se pudo leer el enlace de Spotify.'})
-
-    is_zip = (formato == 'zip')
-    
-    ydl_opts = {
-        'quiet': True,
-        'no_warnings': True,
-        'outtmpl': out_template,
-        'format': 'bestaudio/best' if (formato == 'mp3' or is_zip) else 'best',
-        'extract_flat': 'in_playlist' if ('playlist' in url or 'album' in url) else False,
-    }
-
-    if formato == 'mp3' or is_zip:
-        ydl_opts['postprocessors'] = [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'mp3',
-            'preferredquality': '192',
-        }]
+    work_dir = f"/tmp/{batch_id}"
+    os.makedirs(work_dir, exist_ok=True)
 
     try:
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(target_url, download=True)
+        # Consultamos oEmbed para obtener título y portada preliminar
+        oembed_res = requests.get(f"https://open.spotify.com/oembed?url={url}").json()
+        item_title = oembed_res.get('title', 'Audio de Spotify')
+        thumbnail = oembed_res.get('thumbnail_url', '')
+
+        # Ejecutamos spotdl para descargar la pista o playlist completa en la carpeta temporal
+        # spotdl descarga directamente buscando coincidencias de audio limpias
+        cmd = ["spotdl", url, "--output", work_dir]
+        result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        # Recolectar todos los archivos MP3 descargados en esa carpeta
+        downloaded_files = []
+        for root, dirs, files in os.walk(work_dir):
+            for file in files:
+                if file.endswith('.mp3'):
+                    downloaded_files.append(os.path.join(root, file))
+
+        if not downloaded_files:
+            return jsonify({'success': False, 'error': 'No se encontraron canciones descargables en este enlace.'})
+
+        # Si se pidió ZIP o hay múltiples canciones (playlist/álbum)
+        if formato == 'zip' or len(downloaded_files) > 1:
+            zip_filename = f"{batch_id}.zip"
+            zip_path = os.path.join('/tmp', zip_filename)
             
-            # Recolectar archivos generados en /tmp para este ID
-            downloaded_files = []
-            for f in os.listdir('/tmp'):
-                if f.startswith(batch_id):
-                    downloaded_files.append(os.path.join('/tmp', f))
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                for file_path in downloaded_files:
+                    arcname = os.path.basename(file_path)
+                    zipf.write(file_path, arcname)
+            
+            # Limpiar carpeta de trabajo individual
+            shutil.rmtree(work_dir, ignore_errors=True)
 
-            if not downloaded_files:
-                return jsonify({'success': False, 'error': 'No se pudo generar ningún archivo.'})
+            return jsonify({
+                'success': True,
+                'title': f"Playlist: {item_title} ({len(downloaded_files)} canciones)",
+                'thumbnail': thumbnail,
+                'file_id': zip_filename,
+                'ext': 'zip'
+            })
+        else:
+            # Canción individual
+            single_file = downloaded_files[0]
+            dest_filename = f"{batch_id}_single.mp3"
+            dest_path = os.path.join('/tmp', dest_filename)
+            shutil.move(single_file, dest_path)
+            
+            shutil.rmtree(work_dir, ignore_errors=True)
+            
+            song_name = os.path.splitext(os.path.basename(single_file))[0]
 
-            # Si se solicitó ZIP o es una lista de reproducción completa
-            if is_zip or len(downloaded_files) > 1:
-                zip_filename = f"{batch_id}.zip"
-                zip_path = os.path.join('/tmp', zip_filename)
-                with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                    for file in downloaded_files:
-                        zipf.write(file, os.path.basename(file))
-                
-                return jsonify({
-                    'success': True,
-                    'title': 'Colección de Archivos (ZIP)',
-                    'thumbnail': info.get('thumbnail', ''),
-                    'file_id': zip_filename,
-                    'ext': 'zip'
-                })
-            else:
-                # Archivo único normal
-                single_file = downloaded_files[0]
-                actual_filename = os.path.basename(single_file)
-                title = info.get('title', 'archivo_descargado')
-                if 'entries' in info and info['entries']:
-                    title = info['entries'][0].get('title', title)
-
-                return jsonify({
-                    'success': True,
-                    'title': title,
-                    'thumbnail': info.get('thumbnail', ''),
-                    'file_id': actual_filename,
-                    'ext': 'mp3' if formato == 'mp3' else 'mp4'
-                })
+            return jsonify({
+                'success': True,
+                'title': song_name,
+                'thumbnail': thumbnail,
+                'file_id': dest_filename,
+                'ext': 'mp3'
+            })
 
     except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
+        shutil.rmtree(work_dir, ignore_errors=True)
+        return jsonify({'success': False, 'error': f'Error al procesar: {str(e)}'})
 
 @app.route('/download_file')
 def download_file():
     file_id = request.args.get('file')
-    name = request.args.get('name', 'descarga')
+    name = request.args.get('name', 'spotify_collection')
     ext = request.args.get('ext', 'zip')
     
     file_path = os.path.join('/tmp', file_id)
@@ -336,4 +330,4 @@ def download_file():
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
-  
+    
