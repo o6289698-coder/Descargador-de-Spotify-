@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Playlist Downloader</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Spotify Playlist Downloader</h1>
+            <p>Extrae canciones de playlists públicas y descárgalas</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <div class="url-input-group">
+                    <input 
+                        type="text" 
+                        id="playlistUrl" 
+                        placeholder="Pega aquí el enlace de la playlist de Spotify..."
+                        class="url-input"
+                    >
+                    <button onclick="extractPlaylist()" class="btn btn-primary">
+                        🔍 Extraer Canciones
+                    </button>
+                </div>
+                <p class="help-text">
+                    Ejemplo: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
+                </p>
+            </section>
+
+            <div id="loading" class="loading hidden">
+                <div class="spinner"></div>
+                <p>Cargando playlist...</p>
+            </div>
+
+            <div id="error" class="error hidden"></div>
+
+            <section id="results" class="results hidden">
+                <div class="playlist-header">
+                    <img id="playlistImage" src="" alt="Playlist" class="playlist-img">
+                    <div class="playlist-info">
+                        <h2 id="playlistName"></h2>
+                        <p id="trackCount"></p>
+                    </div>
+                </div>
+
+                <div class="actions-bar">
+                    <button onclick="downloadSelected()" class="btn btn-success">
+                        ⬇️ Descargar Seleccionadas
+                    </button>
+                    <button onclick="downloadAll()" class="btn btn-primary">
+                        📦 Descargar Todo (ZIP)
+                    </button>
+                    <button onclick="selectAll()" class="btn btn-secondary">
+                        ☑️ Seleccionar Todas
+                    </button>
+                    <button onclick="deselectAll()" class="btn btn-secondary">
+                        ☐ Deseleccionar Todas
+                    </button>
+                </div>
+
+                <div class="songs-list" id="songsList"></div>
+            </section>
+        </main>
+
+        <div id="downloadModal" class="modal hidden">
+            <div class="modal-content">
+                <h3>Descargando...</h3>
+                <div class="progress-bar">
+                    <div id="progressFill" class="progress-fill"></div>
+                </div>
+                <p id="progressText">0 / 0 canciones</p>
+                <button onclick="closeModal()" class="btn btn-secondary">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p class="dev-text">Desarrollado por <span class="erick-name">Erick</span></p>
+        <div class="heart-container">
+            <button class="heart-btn" id="loveHeart" onclick="showLove()">
+                <svg class="heart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff4757"/>
+                </svg>
+            </button>
+        </div>
+    </footer>
+
+    <div id="loveModal" class="love-modal hidden">
+        <div class="love-modal-content">
+            <div class="love-animation">
+                <div class="floating-hearts">
+                    <span class="floating-heart">💕</span>
+                    <span class="floating-heart">💖</span>
+                    <span class="floating-heart">💗</span>
+                    <span class="floating-heart">💝</span>
+                    <span class="floating-heart">💞</span>
+                </div>
+                <h2 class="love-message">Te amo mi Alexa</h2>
+                <p class="love-subtitle">Eres lo mejor que me ha pasado ❤️</p>
+                <button onclick="closeLoveModal()" class="btn btn-love">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
