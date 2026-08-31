@@ -16,31 +16,28 @@ def search():
     if not query:
         return jsonify([])
     
-    # Configuramos yt-dlp para realizar una búsqueda general y amplia en la web
+    # Configuramos yt-dlp simulando un cliente de Android para evitar bloqueos de IP en Render
     ydl_opts = {
-        'default_search': 'auto', # 'auto' permite buscar en múltiples plataformas web, no solo YouTube
+        'default_search': 'ytsearch5',
         'extract_flat': True,
         'quiet': True,
-        'playlistend': 5 # Limita a las primeras 5 mejores coincidencias globales
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}}
     }
     
     results = []
     try:
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            # Añadimos un prefijo de búsqueda general si el usuario ingresa texto plano
-            search_query = f"ytsearch5:{query}" if not query.startswith('http') else query
-            info = ydl.extract_info(search_query, download=False)
-            
-            entries = info.get('entries', [info]) if 'entries' in info else [info]
-            for entry in entries:
-                if entry:
-                    results.append({
-                        'id': entry.get('id', 'unknown'),
-                        'title': entry.get('title', 'Resultado sin título'),
-                        'url': entry.get('webpage_url') or entry.get('url') or f"https://www.youtube.com/watch?v={entry.get('id')}"
-                    })
+            info = ydl.extract_info(query, download=False)
+            if 'entries' in info:
+                for entry in info['entries']:
+                    if entry:
+                        results.append({
+                            'id': entry.get('id'),
+                            'title': entry.get('title'),
+                            'url': f"https://www.youtube.com/watch?v={entry.get('id')}"
+                        })
     except Exception as e:
-        print(f"Error en búsqueda global: {e}")
+        print(f"Error en búsqueda: {e}")
         
     return jsonify(results)
 
@@ -52,6 +49,7 @@ def download():
     
     output_template = os.path.join(DOWNLOAD_DIR, '%(title)s.%(ext)s')
     
+    # Forzamos el cliente de Android para el proceso de descarga del MP3
     ydl_opts = {
         'format': 'bestaudio/best',
         'outtmpl': output_template,
@@ -60,6 +58,7 @@ def download():
             'preferredcodec': 'mp3',
             'preferredquality': '192',
         }],
+        'extractor_args': {'youtube': {'player_client': ['android', 'web']}},
         'quiet': True
     }
     
