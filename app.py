@@ -16,34 +16,36 @@ def search():
         return jsonify([])
     
     try:
-        # Búsqueda abierta en alta calidad para canciones completas
+        # Ampliamos la búsqueda utilizando la API global de Deezer / catálogos abiertos de streaming
         encoded_query = urllib.request.quote(query)
-        url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit=8"
+        url = f"https://api.deezer.com/search?q={encoded_query}&limit=15"
         
         req = urllib.request.Request(
             url, 
-            headers={'User-Agent': 'Mozilla/5.0'}
+            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
         )
         
         with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
             results = []
             
-            for item in data.get('results', []):
-                preview_url = item.get('previewUrl', '')
-                # Transformamos la URL para apuntar a la versión de alta duración si está disponible, 
-                # o usamos un servicio de redirección de audio completo basado en el ID de la pista.
-                full_audio_url = preview_url.replace('m4a', 'mp3').replace('sandbox', 'mzstatic') if preview_url else ''
+            for item in data.get('data', []):
+                track_title = item.get('title', 'Sin título')
+                artist_name = item.get('artist', {}).get('name', 'Artista desconocido')
+                preview_url = item.get('preview', '') # Vista previa o flujo de audio
+                link = item.get('link', '')
                 
-                results.append({
-                    'title': f"{item.get('trackName')} - {item.get('artistName')}",
-                    'url': preview_url,
-                    'artwork': item.get('artworkUrl100', '')
-                })
+                # Priorizamos elementos que tengan pista de audio fluida
+                if preview_url:
+                    results.append({
+                        'title': f"{track_title} - {artist_name}",
+                        'url': preview_url,
+                        'web_link': link
+                    })
                 
             return jsonify(results)
     except Exception as e:
-        print(f"Error en búsqueda: {e}")
+        print(f"Error en búsqueda global: {e}")
         return jsonify([])
 
 if __name__ == '__main__':
