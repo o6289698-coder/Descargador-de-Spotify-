@@ -3,109 +3,84 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spotify Playlist Downloader</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <title>Descargador Global MP3 - Deyra</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #0b111e; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+        .card { background-color: #131b2e; border: 1px solid #1e293b; border-radius: 20px; padding: 30px 20px; width: 100%; max-width: 450px; text-align: center; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5); }
+        h1 { color: #38bdf8; font-size: 1.5rem; margin-bottom: 20px; }
+        input[type="text"] { width: 100%; padding: 14px; background-color: #0b111e; border: 1px solid #1e293b; border-radius: 10px; color: #fff; font-size: 0.95rem; outline: none; margin-bottom: 15px; }
+        input[type="text"]::placeholder { color: #64748b; }
+        button.process-btn { width: 100%; padding: 14px; background-color: #0284c7; border: none; border-radius: 10px; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; }
+        button.process-btn:hover { background-color: #0369a1; }
+        #results-container { text-align: left; margin-top: 15px; max-height: 250px; overflow-y: auto; }
+        .song-item { background: #0b111e; border: 1px solid #1e293b; padding: 10px; margin-bottom: 8px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 0.85rem; }
+        .song-title { color: #38bdf8; max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .download-form { margin: 0; }
+        .download-btn { background-color: #16a34a; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; cursor: pointer; }
+        .download-btn:hover { background-color: #15803d; }
+        .divider { height: 1px; background-color: #1e293b; margin: 20px 0; }
+        .heart-btn { background: none; border: none; font-size: 2.2rem; cursor: pointer; }
+        .heart-btn:active { transform: scale(1.2); }
+        #love-message { margin-top: 8px; color: #f43f5e; font-weight: 600; font-size: 1.1rem; min-height: 24px; }
+        .footer { color: #64748b; font-size: 0.85rem; margin-top: 15px; }
+        .footer span { color: #38bdf8; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🎵 Spotify Playlist Downloader</h1>
-            <p>Extrae canciones de playlists públicas y descárgalas</p>
-        </header>
+    <div class="card">
+        <h1>Descargador Global MP3</h1>
+        <input type="text" id="song-input" placeholder="Ej. Luis Pérez Meza o enlace web...">
+        <button class="process-btn" onclick="buscarMusica()">Buscar en la Web</button>
+        
+        <div id="results-container"></div>
 
-        <main>
-            <section class="input-section">
-                <div class="url-input-group">
-                    <input 
-                        type="text" 
-                        id="playlistUrl" 
-                        placeholder="Pega aquí el enlace de la playlist de Spotify..."
-                        class="url-input"
-                    >
-                    <button onclick="extractPlaylist()" class="btn btn-primary">
-                        🔍 Extraer Canciones
-                    </button>
-                </div>
-                <p class="help-text">
-                    Ejemplo: https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M
-                </p>
-            </section>
-
-            <div id="loading" class="loading hidden">
-                <div class="spinner"></div>
-                <p>Cargando playlist...</p>
-            </div>
-
-            <div id="error" class="error hidden"></div>
-
-            <section id="results" class="results hidden">
-                <div class="playlist-header">
-                    <img id="playlistImage" src="" alt="Playlist" class="playlist-img">
-                    <div class="playlist-info">
-                        <h2 id="playlistName"></h2>
-                        <p id="trackCount"></p>
-                    </div>
-                </div>
-
-                <div class="actions-bar">
-                    <button onclick="downloadSelected()" class="btn btn-success">
-                        ⬇️ Descargar Seleccionadas
-                    </button>
-                    <button onclick="downloadAll()" class="btn btn-primary">
-                        📦 Descargar Todo (ZIP)
-                    </button>
-                    <button onclick="selectAll()" class="btn btn-secondary">
-                        ☑️ Seleccionar Todas
-                    </button>
-                    <button onclick="deselectAll()" class="btn btn-secondary">
-                        ☐ Deseleccionar Todas
-                    </button>
-                </div>
-
-                <div class="songs-list" id="songsList"></div>
-            </section>
-        </main>
-
-        <div id="downloadModal" class="modal hidden">
-            <div class="modal-content">
-                <h3>Descargando...</h3>
-                <div class="progress-bar">
-                    <div id="progressFill" class="progress-fill"></div>
-                </div>
-                <p id="progressText">0 / 0 canciones</p>
-                <button onclick="closeModal()" class="btn btn-secondary">Cerrar</button>
-            </div>
-        </div>
+        <div class="divider"></div>
+        <button class="heart-btn" onclick="document.getElementById('love-message').textContent = 'Te amo Deyra'" title="Presiona">❤️</button>
+        <div id="love-message"></div>
+        <div class="footer">Desarrollado por <span>Erick</span></div>
     </div>
 
-    <footer class="footer">
-        <p class="dev-text">Desarrollado por <span class="erick-name">Erick</span></p>
-        <div class="heart-container">
-            <button class="heart-btn" id="loveHeart" onclick="showLove()">
-                <svg class="heart-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" fill="#ff4757"/>
-                </svg>
-            </button>
-        </div>
-    </footer>
+    <script>
+        async function buscarMusica() {
+            const query = document.getElementById('song-input').value.trim();
+            const container = document.getElementById('results-container');
+            if (!query) {
+                alert("Por favor escribe el nombre de la canción o pega un enlace.");
+                return;
+            }
+            
+            container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:10px;">Buscando en múltiples fuentes... 🌐</div>';
+            
+            const formData = new FormData();
+            formData.append('query', query);
 
-    <div id="loveModal" class="love-modal hidden">
-        <div class="love-modal-content">
-            <div class="love-animation">
-                <div class="floating-hearts">
-                    <span class="floating-heart">💕</span>
-                    <span class="floating-heart">💖</span>
-                    <span class="floating-heart">💗</span>
-                    <span class="floating-heart">💝</span>
-                    <span class="floating-heart">💞</span>
-                </div>
-                <h2 class="love-message">Te amo mi Alexa</h2>
-                <p class="love-subtitle">Eres lo mejor que me ha pasado ❤️</p>
-                <button onclick="closeLoveModal()" class="btn btn-love">Cerrar</button>
-            </div>
-        </div>
-    </div>
+            try {
+                const res = await fetch('/search', { method: 'POST', body: formData });
+                const data = await res.json();
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+                container.innerHTML = '';
+                if (data.length === 0) {
+                    container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:10px;">No se encontraron resultados globales.</div>';
+                    return;
+                }
+
+                data.forEach(song => {
+                    const item = document.createElement('div');
+                    item.className = 'song-item';
+                    item.innerHTML = `
+                        <span class="song-title" title="${song.title}">${song.title}</span>
+                        <form class="download-form" action="/download" method="POST">
+                            <input type="hidden" name="url" value="${song.url}">
+                            <button type="submit" class="download-btn">MP3</button>
+                        </form>
+                    `;
+                    container.appendChild(item);
+                });
+            } catch (err) {
+                container.innerHTML = '<div style="color:#f43f5e; text-align:center; padding:10px;">Error al conectar con el servidor.</div>';
+            }
+        }
+    </script>
 </body>
 </html>
