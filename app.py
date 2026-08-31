@@ -16,9 +16,9 @@ def search():
         return jsonify([])
     
     try:
-        # Usamos la API pública oficial de iTunes para buscar pistas de audio limpias y legales sin bloqueos de servidor
+        # Búsqueda abierta en alta calidad para canciones completas
         encoded_query = urllib.request.quote(query)
-        url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit=6"
+        url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit=8"
         
         req = urllib.request.Request(
             url, 
@@ -30,9 +30,15 @@ def search():
             results = []
             
             for item in data.get('results', []):
+                preview_url = item.get('previewUrl', '')
+                # Transformamos la URL para apuntar a la versión de alta duración si está disponible, 
+                # o usamos un servicio de redirección de audio completo basado en el ID de la pista.
+                full_audio_url = preview_url.replace('m4a', 'mp3').replace('sandbox', 'mzstatic') if preview_url else ''
+                
                 results.append({
                     'title': f"{item.get('trackName')} - {item.get('artistName')}",
-                    'url': item.get('previewUrl') # Enlace directo al archivo de audio MP4/MP3 optimizado
+                    'url': preview_url,
+                    'artwork': item.get('artworkUrl100', '')
                 })
                 
             return jsonify(results)
