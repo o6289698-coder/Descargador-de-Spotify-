@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: descargador-youtube-erick
-    env: node
-    buildCommand: npm install && pip install -r requirements.txt
-    startCommand: node server.js
-    
