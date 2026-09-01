@@ -234,16 +234,10 @@
             processBtn.textContent = 'Procesando...';
             processBtn.disabled = true;
 
-            // Reproduce el video perfectamente en el reproductor integrado
             videoPreview.src = `https://www.youtube.com/embed/${videoId}`;
             
-            // Asocia la descarga de manera limpia y directa utilizando el ID extraído
-            if (format === 'mp3') {
-                downloadLink.href = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp3`;
-            } else {
-                downloadLink.href = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp4`;
-            }
-
+            // Apunta de vuelta a nuestro propio servidor local/en la nube
+            downloadLink.href = `/download?url=${encodeURIComponent(url)}&format=${format}`;
             downloadLink.textContent = `Descargar ${format.toUpperCase()}`;
 
             setTimeout(() => {
