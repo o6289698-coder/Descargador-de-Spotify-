@@ -1,0 +1,13 @@
+{
+  "name": "descargador-youtube-erick",
+  "version": "1.0.0",
+  "description": "Descargador de YouTube desarrollado por Erick",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "yt-dlp-wrap": "^2.3.9"
+  }
+}
