@@ -1,9 +1,13 @@
 import os
-from flask import Flask, render_template, request, jsonify
-import urllib.request
-import json
+from flask import Flask, render_template, request, send_file, jsonify
+import yt_dlp
 
 app = Flask(__name__)
+DOWNLOAD_DIR = 'downloads'
+os.makedirs(DOWNLOAD_DIR, exist_ok=True)
+
+# Ruta del archivo de cookies que subiremos a Render para evitar bloqueos
+COOKIES_FILE = 'cookies.txt'
 
 @app.route('/')
 def index():
@@ -15,36 +19,74 @@ def search():
     if not query:
         return jsonify([])
     
+    ydl_opts = {
+        'default_search': 'ytsearch8',
+        'extract_flat': True,
+        'quiet': True,
+    }
+    
+    if os.path.exists(COOKIES_FILE):
+        ydl_opts['cookiefile'] = COOKIES_FILE
+
+    results = []
     try:
-        # Ampliamos la búsqueda a 15 opciones para dar mayor variedad de resultados
-        encoded_query = urllib.request.quote(query)
-        url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit=15"
-        
-        req = urllib.request.Request(
-            url, 
-            headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
-        )
-        
-        with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            results = []
-            
-            for item in data.get('results', []):
-                track_name = item.get('trackName', 'Sin título')
-                artist_name = item.get('artistName', 'Artista desconocido')
-                track_view_url = item.get('trackViewUrl', '') # Enlace completo a la pista
-                
-                if track_name:
-                    results.append({
-                        'title': f"{track_name} - {artist_name}",
-                        'query_term': f"{track_name} {artist_name}",
-                        'full_link': track_view_url
-                    })
-                
-            return jsonify(results)
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(query, download=False)
+            if 'entries' in info:
+                for entry in info['entries']:
+                    if entry:
+                        results.append({
+                            'id': entry.get('id'),
+                            'title': entry.get('title', 'Sin título'),
+                            'url': f"https://www.youtube.com/watch?v={entry.get('id')}"
+                        })
     except Exception as e:
-        print(f"Error en búsqueda global: {e}")
-        return jsonify([])
+        print(f"Error en búsqueda: {e}")
+        
+    return jsonify(results)
+
+@app.route('/download', methods=['POST'])
+def download():
+    url = request.form.get('url')
+    file_format = request.form.get('format', 'mp3') # 'mp3' o 'mp4'
+    
+    if not url:
+        return "URL no válida", 400
+    
+    output_template = os.path.join(DOWNLOAD_DIR, '%(id)s.%(ext)s')
+    
+    ydl_opts = {
+        'outtmpl': output_template,
+        'quiet': True
+    }
+    
+    if os.path.exists(COOKIES_FILE):
+        ydl_opts['cookiefile'] = COOKIES_FILE
+
+    if file_format == 'mp3':
+        ydl_opts['format'] = 'bestaudio/best'
+        ydl_opts['postprocessors'] = [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'mp3',
+            'preferredquality': '192',
+        }]
+    else:
+        # Formato MP4 con video y audio combinados
+        ydl_opts['format'] = 'best[ext=mp4]/best'
+
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            filename = ydl.prepare_filename(info)
+            
+            if file_format == 'mp3':
+                final_filename = os.path.splitext(filename)[0] + '.mp3'
+            else:
+                final_filename = os.path.splitext(filename)[0] + '.mp4'
+                
+        return send_file(final_filename, as_attachment=True)
+    except Exception as e:
+        return f"Error al procesar el archivo: {e}", 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
