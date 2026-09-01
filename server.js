@@ -1,6 +1,7 @@
 const express = require('express');
-const { spawn } = require('child_process');
+const { exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -14,43 +15,39 @@ app.get('/download', (req, res) => {
         return res.status(400).send('Falta el enlace de YouTube.');
     }
 
-    console.log(`Procesando enlace para formato ${format}: ${videoUrl}`);
+    const uniqueId = Date.now();
+    const outputExtension = format === 'mp3' ? 'mp3' : 'mp4';
+    const outputPath = path.join(__dirname, `output_${uniqueId}.${outputExtension}`);
 
-    let ytDlpArgs = [];
+    let ytDlpCommand = '';
     if (format === 'mp3') {
-        ytDlpArgs = [
-            '-x', '--audio-format', 'mp3',
-            '--output', '-',
-            videoUrl
-        ];
-        res.header('Content-Type', 'audio/mpeg');
-        res.header('Content-Disposition', 'attachment; filename="audio_erick.mp3"');
+        ytDlpCommand = `yt-dlp -x --audio-format mp3 -o "${outputPath}" "${videoUrl}"`;
     } else {
-        ytDlpArgs = [
-            '-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best',
-            '--output', '-',
-            videoUrl
-        ];
-        res.header('Content-Type', 'video/mp4');
-        res.header('Content-Disposition', 'attachment; filename="video_erick.mp4"');
+        // Comando robusto para asegurar que combine video y audio correctamente en un MP4 estándar
+        ytDlpCommand = `yt-dlp -f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / b" --merge-output-format mp4 -o "${outputPath}" "${videoUrl}"`;
     }
 
-    const ytDlpProcess = spawn('yt-dlp', ytDlpArgs);
+    console.log(`Ejecutando descarga: ${ytDlpCommand}`);
 
-    ytDlpProcess.stdout.pipe(res);
-
-    ytDlpProcess.stderr.on('data', (data) => {
-        console.error(`stderr: ${data}`);
-    });
-
-    ytDlpProcess.on('close', (code) => {
-        if (code !== 0) {
-            console.log(`Proceso finalizado con código ${code}`);
+    exec(ytDlpCommand, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error de yt-dlp: ${error.message}`);
+            return res.status(500).send('Error al procesar el archivo multimedia.');
         }
-    });
 
-    req.on('close', () => {
-        ytDlpProcess.kill();
+        if (!fs.existsSync(outputPath)) {
+            return res.status(500).send('No se pudo generar el archivo.');
+        }
+
+        res.download(outputPath, `descarga_erick.${outputExtension}`, (err) => {
+            if (err) {
+                console.error(`Error al enviar archivo: ${err}`);
+            }
+            // Eliminar el archivo temporal del servidor después de enviarlo
+            fs.unlink(outputPath, (unlinkErr) => {
+                if (unlinkErr) console.error(unlinkErr);
+            });
+        });
     });
 });
 
