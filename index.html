@@ -3,249 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Descargador de Video y Audio</title>
+    <title>Descargador Multimedia - Te amo Deyra</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            background-color: #0b1329;
-            font-family: Georgia, serif;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .card {
-            background-color: #121c38;
-            border: 1px solid #1e2d5c;
-            border-radius: 16px;
-            padding: 30px;
-            width: 320px;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            margin: 20px 0;
-        }
-
-        h1 {
-            color: #38bdf8;
-            font-size: 22px;
-            margin-bottom: 25px;
-            line-height: 1.3;
-        }
-
-        .input-url {
-            width: 100%;
-            background-color: #0b1329;
-            border: 1px solid #1e2d5c;
-            border-radius: 8px;
-            padding: 12px;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
             color: #ffffff;
-            font-size: 14px;
-            margin-bottom: 15px;
-            box-sizing: border-box;
-            outline: none;
+            text-align: center;
+            padding: 20px;
+            margin: 0;
         }
-
-        .input-url::placeholder {
-            color: #64748b;
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-
-        .controls-container {
-            display: flex;
-            gap: 10px;
+        h1 {
+            color: #ff4757;
+            font-size: 24px;
+        }
+        p.love-msg {
+            color: #ff6b81;
+            font-style: italic;
             margin-bottom: 20px;
         }
-
-        .select-format {
-            flex: 1;
-            background-color: #0b1329;
-            border: 1px solid #1e2d5c;
-            border-radius: 8px;
-            padding: 12px;
-            color: #ffffff;
-            font-size: 14px;
-            outline: none;
-            cursor: pointer;
+        input[type="text"] {
+            width: 80%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #444;
+            background: #2f3640;
+            color: #fff;
+            margin-bottom: 10px;
         }
-
-        .btn-process {
-            background-color: #0284c7;
+        button {
+            padding: 10px 20px;
             border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
-            color: #ffffff;
-            font-size: 14px;
+            border-radius: 5px;
+            background-color: #ff4757;
+            color: white;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
+            margin: 5px;
         }
-
-        .btn-process:hover {
-            background-color: #0369a1;
+        button:hover {
+            background-color: #ff6b81;
         }
-
-        .btn-process:disabled {
-            background-color: #03486b;
-            cursor: not-allowed;
-        }
-
         .preview-container {
             margin-top: 20px;
-            display: none;
-            text-align: left;
         }
-
-        .preview-container iframe {
+        iframe {
             width: 100%;
-            height: 160px;
-            border-radius: 8px;
-            border: 1px solid #1e2d5c;
-            margin-bottom: 15px;
-        }
-
-        .btn-download {
-            display: block;
-            width: 100%;
-            background-color: #10b981;
-            color: #ffffff;
-            text-decoration: none;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            box-sizing: border-box;
-            text-align: center;
-            transition: background 0.2s;
-        }
-
-        .btn-download:hover {
-            background-color: #059669;
-        }
-
-        .heart-section {
-            margin: 15px 0;
-        }
-
-        .heart {
-            font-size: 26px;
-            color: #ef4444;
-            cursor: pointer;
-            display: inline-block;
-            transition: transform 0.2s;
-        }
-
-        .heart:hover {
-            transform: scale(1.2);
-        }
-
-        .love-message {
-            color: #38bdf8;
-            font-size: 15px;
-            font-style: italic;
-            margin-top: 8px;
-            display: none;
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .divider {
+            height: 315px;
+            border-radius: 5px;
             border: none;
-            border-top: 1px solid #1e2d5c;
-            margin: 15px 0;
         }
-
-        .footer-text {
-            color: #64748b;
-            font-size: 13px;
-        }
-
-        .footer-text span {
-            color: #38bdf8;
+        .loader {
+            display: none;
+            margin-top: 15px;
+            color: #ffa502;
         }
     </style>
 </head>
 <body>
 
-    <div class="card">
-        <h1>Descargador de<br>Video y Audio</h1>
-        
-        <input type="text" class="input-url" id="urlInput" placeholder="Pega el enlace de YouTube aquí...">
+    <div class="container">
+        <h1>Descargador de YouTube</h1>
+        <p class="love-msg">Te amo Deyra ❤️</p>
 
-        <div class="controls-container">
-            <select class="select-format" id="formatSelect">
-                <option value="mp4">Video MP4</option>
-                <option value="mp3">Audio MP3</option>
-            </select>
-            <button class="btn-process" id="processBtn">Procesar</button>
-        </div>
+        <input type="text" id="urlInput" placeholder="Pega el enlace de YouTube aquí...">
+        <br>
+        <button onclick="previewVideo()">Previsualizar</button>
+        <br><br>
 
-        <div class="preview-container" id="previewContainer">
-            <iframe id="videoPreview" src="" allowfullscreen></iframe>
-            <a href="#" id="downloadLink" class="btn-download" target="_blank">Descargar Archivo</a>
-        </div>
+        <button onclick="startDownload('mp4')">Descargar Video (MP4)</button>
+        <button onclick="startDownload('mp3')">Descargar Audio (MP3)</button>
 
-        <div class="heart-section">
-            <div class="heart" id="heartBtn" title="Haz clic">❤️</div>
-            <div class="love-message" id="loveMessage">Te amo Deyra</div>
-        </div>
+        <div class="loader" id="loaderText">Procesando archivo en el servidor, espera un momento...</div>
 
-        <hr class="divider">
-
-        <div class="footer-text">
-            Desarrollado por <span>Erick</span>
-        </div>
+        <div class="preview-container" id="previewArea"></div>
     </div>
 
     <script>
-        const processBtn = document.getElementById('processBtn');
-        const urlInput = document.getElementById('urlInput');
-        const formatSelect = document.getElementById('formatSelect');
-        const previewContainer = document.getElementById('previewContainer');
-        const videoPreview = document.getElementById('videoPreview');
-        const downloadLink = document.getElementById('downloadLink');
-        const heartBtn = document.getElementById('heartBtn');
-        const loveMessage = document.getElementById('loveMessage');
-
-        heartBtn.addEventListener('click', () => {
-            loveMessage.style.display = loveMessage.style.display === 'block' ? 'none' : 'block';
-        });
-
-        function extractYouTubeId(url) {
+        function extractVideoID(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
             return (match && match[2].length === 11) ? match[2] : null;
         }
 
-        processBtn.addEventListener('click', () => {
-            const url = urlInput.value.trim();
-            const format = formatSelect.value;
-            const videoId = extractYouTubeId(url);
+        function previewVideo() {
+            const url = document.getElementById('urlInput').value;
+            const videoId = extractVideoID(url);
+            const previewArea = document.getElementById('previewArea');
 
-            if (!videoId) {
-                alert('Por favor, ingresa un enlace válido de YouTube.');
+            if (videoId) {
+                previewArea.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}" allowfullscreen></iframe>`;
+            } else {
+                alert('Por favor ingresa un enlace de YouTube válido.');
+            }
+        }
+
+        function startDownload(format) {
+            const url = document.getElementById('urlInput').value;
+            const loader = document.getElementById('loaderText');
+
+            if (!url) {
+                alert('Por favor ingresa un enlace primero.');
                 return;
             }
 
-            processBtn.textContent = 'Procesando...';
-            processBtn.disabled = true;
+            loader.style.display = 'block';
 
-            videoPreview.src = `https://www.youtube.com/embed/${videoId}`;
-            
-            // Apunta de vuelta a nuestro propio servidor local/en la nube
-            downloadLink.href = `/download?url=${encodeURIComponent(url)}&format=${format}`;
-            downloadLink.textContent = `Descargar ${format.toUpperCase()}`;
+            // Redirige directamente al endpoint del servidor que configuramos en server.js
+            window.location.href = `/download?url=${encodeURIComponent(url)}&format=${format}`;
 
+            // Ocultar mensaje de carga después de unos segundos
             setTimeout(() => {
-                previewContainer.style.display = 'block';
-                processBtn.textContent = 'Procesar';
-                processBtn.disabled = false;
-            }, 800);
-        });
+                loader.style.display = 'none';
+            }, 6000);
+        }
     </script>
 
 </body>
