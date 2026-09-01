@@ -1,48 +1,52 @@
 const express = require('express');
-const ytdl = require('@distube/ytdl-core');
+const { exec } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname)));
 
-app.get('/download', async (req, res) => {
+app.get('/download', (req, res) => {
     const videoUrl = req.query.url;
     const format = req.query.format || 'mp4';
 
-    if (!videoUrl || !ytdl.validateURL(videoUrl)) {
-        return res.status(400).send('Enlace de YouTube no válido.');
+    if (!videoUrl) {
+        return res.status(400).send('Falta el enlace de YouTube.');
     }
 
-    try {
-        console.log(`Procesando descarga para: ${videoUrl} [${format}]`);
-        
-        const info = await ytdl.getInfo(videoUrl);
-        const title = info.videoDetails.title.replace(/[\/\\?%*:|"<>]/g, ''); // Limpiar caracteres prohibidos en nombres de archivos
-        
-        const extension = format === 'mp3' ? 'mp3' : 'mp4';
-        const filterType = format === 'mp3' ? 'audioonly' : 'videoandaudio';
+    console.log(`Procesando con yt-dlp: ${videoUrl} [${format}]`);
+    
+    const outputId = Date.now();
+    const ext = format === 'mp3' ? 'mp3' : 'mp4';
+    const outputPath = path.join(__dirname, `output_${outputId}.${ext}`);
 
-        res.header('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.${extension}"`);
-        res.header('Content-Type', format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
+    // Comando yt-dlp (si tienes un archivo cookies.txt en tu repo, usará --cookies cookies.txt automáticamente)
+    const cookiesParam = fs.existsSync(path.join(__dirname, 'cookies.txt')) ? `--cookies cookies.txt` : '';
+    
+    let command = '';
+    if (format === 'mp3') {
+        command = `yt-dlp ${cookiesParam} -x --audio-format mp3 -o "${outputPath}" "${videoUrl}"`;
+    } else {
+        command = `yt-dlp ${cookiesParam} -f "best[ext=mp4]/best" -o "${outputPath}" "${videoUrl}"`;
+    }
 
-        ytdl(videoUrl, {
-            filter: filterType,
-            quality: 'highest',
-        }).on('error', (err) => {
-            console.error('Error durante el streaming:', err);
-            if (!res.headersSent) {
-                res.status(500).send('Error al procesar el archivo multimedia.');
-            }
-        }).pipe(res);
-
-    } catch (error) {
-        console.error(`Error general del servidor: ${error.message}`);
-        if (!res.headersSent) {
-            res.status(500).send('Error al procesar el archivo multimedia.');
+    exec(command, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`Error de ejecución: ${error.message}`);
+            return res.status(500).send('Error al procesar el archivo multimedia.');
         }
-    }
+
+        if (fs.existsSync(outputPath)) {
+            res.download(outputPath, `descarga_erick.${ext}`, (err) => {
+                if (err) console.error(`Error al enviar archivo: ${err}`);
+                fs.unlink(outputPath, () => {}); // Limpiar archivo local después de enviar
+            });
+        } else {
+            res.status(500).send('No se generó el archivo de salida.');
+        }
+    });
 });
 
 app.listen(PORT, () => {
