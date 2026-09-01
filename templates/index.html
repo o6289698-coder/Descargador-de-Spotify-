@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Música Global - Deyra</title>
+    <title>Buscador de Música Completa - Deyra</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #0b111e; color: #ffffff; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
@@ -13,18 +13,13 @@
         input[type="text"]::placeholder { color: #64748b; }
         button.process-btn { width: 100%; padding: 14px; background-color: #0284c7; border: none; border-radius: 10px; color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer; transition: background 0.3s; }
         button.process-btn:hover { background-color: #0369a1; }
-        #results-container { text-align: left; margin-top: 15px; max-height: 280px; overflow-y: auto; padding-right: 4px; }
+        #results-container { text-align: left; margin-top: 15px; max-height: 300px; overflow-y: auto; padding-right: 4px; }
         #results-container::-webkit-scrollbar { width: 6px; }
         #results-container::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
-        .song-item { background: #0b111e; border: 1px solid #1e293b; padding: 12px; margin-bottom: 8px; border-radius: 10px; display: flex; flex-direction: column; gap: 8px; font-size: 0.85rem; }
-        .song-info { display: flex; justify-content: space-between; align-items: center; }
-        .song-title { color: #38bdf8; max-width: 230px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
-        audio { width: 100%; height: 32px; margin-top: 4px; accent-color: #38bdf8; }
-        .action-btns { display: flex; gap: 6px; }
-        .download-btn { background-color: #16a34a; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.75rem; }
-        .download-btn:hover { background-color: #15803d; }
-        .web-btn { background-color: #0284c7; color: white; border: none; padding: 6px 10px; border-radius: 6px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.75rem; }
-        .web-btn:hover { background-color: #0369a1; }
+        .song-item { background: #0b111e; border: 1px solid #1e293b; padding: 12px; margin-bottom: 8px; border-radius: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .song-title { color: #38bdf8; font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; max-width: 250px; }
+        .get-full-btn { background-color: #16a34a; color: white; border: none; padding: 8px 12px; border-radius: 6px; font-weight: 600; cursor: pointer; text-decoration: none; font-size: 0.8rem; white-space: nowrap; transition: background 0.2s; }
+        .get-full-btn:hover { background-color: #15803d; }
         .divider { height: 1px; background-color: #1e293b; margin: 20px 0; }
         .heart-btn { background: none; border: none; font-size: 2.2rem; cursor: pointer; transition: transform 0.2s; }
         .heart-btn:active { transform: scale(1.2); }
@@ -35,7 +30,7 @@
 </head>
 <body>
     <div class="card">
-        <h1>Buscador Global de Música</h1>
+        <h1>Descargador Canción Completa</h1>
         <input type="text" id="song-input" placeholder="Ej. La Banda del Recodo...">
         <button class="process-btn" onclick="buscarMusica()">Buscar Ampliamente</button>
         
@@ -56,7 +51,7 @@
                 return;
             }
             
-            container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:10px;">Buscando en catálogos globales... 🌐</div>';
+            container.innerHTML = '<div style="color:#94a3b8; text-align:center; padding:10px;">Buscando opciones completas... 🔍</div>';
             
             const formData = new FormData();
             formData.append('query', query);
@@ -72,17 +67,14 @@
                 }
 
                 data.forEach(song => {
+                    // Enlace inteligente optimizado para abrir la pista completa en buscadores de descarga directa
+                    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(song.query_term)}`;
+                    
                     const item = document.createElement('div');
                     item.className = 'song-item';
                     item.innerHTML = `
-                        <div class="song-info">
-                            <span class="song-title" title="${song.title}">${song.title}</span>
-                            <div class="action-btns">
-                                <a href="${song.url}" download="audio.mp3" class="download-btn">Descargar</a>
-                                <a href="${song.web_link}" target="_blank" class="web-btn">Ver web</a>
-                            </div>
-                        </div>
-                        <audio controls src="${song.url}"></audio>
+                        <span class="song-title" title="${song.title}">${song.title}</span>
+                        <a href="${searchUrl}" target="_blank" class="get-full-btn">Obtener Completa</a>
                     `;
                     container.appendChild(item);
                 });
