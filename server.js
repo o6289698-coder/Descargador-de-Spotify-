@@ -1,13 +1,14 @@
 const express = require('express');
-const { exec } = require('child_process');
+const { Innertube } = require('youtubei.js');
 const path = require('path');
 const fs = require('fs');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname)));
 
-app.get('/download', (req, res) => {
+app.get('/download', async (req, res) => {
     const videoUrl = req.query.url;
     const format = req.query.format || 'mp4';
 
@@ -15,41 +16,43 @@ app.get('/download', (req, res) => {
         return res.status(400).send('Falta el enlace de YouTube.');
     }
 
-    const uniqueId = Date.now();
-    const outputExtension = format === 'mp3' ? 'mp3' : 'mp4';
-    const outputPath = path.join(__dirname, `output_${uniqueId}.${outputExtension}`);
+    try {
+        console.log(`Iniciando descarga por API para: ${videoUrl} [${format}]`);
+        const youtube = await Innertube.create();
+        
+        // Extraer ID o usar URL directa
+        const stream = await youtube.download(videoUrl, {
+            type: format === 'mp3' ? 'audio' : 'video',
+            quality: 'best',
+            format: format === 'mp3' ? 'mp4' : 'mp4' // Contenedor seguro
+        });
 
-    let ytDlpCommand = '';
-    if (format === 'mp3') {
-        // Comando optimizado para MP3
-        ytDlpCommand = `yt-dlp --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -x --audio-format mp3 -o "${outputPath}" "${videoUrl}"`;
-    } else {
-        // Comando seguro y estable para MP4 combinando streams de manera genérica
-        ytDlpCommand = `yt-dlp --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -f "best[ext=mp4]/best" -o "${outputPath}" "${videoUrl}"`;
-    }
+        const outputExtension = format === 'mp3' ? 'mp3' : 'mp4';
+        const outputPath = path.join(__dirname, `output_${Date.now()}.${outputExtension}`);
+        const writeStream = fs.createWriteStream(outputPath);
 
-    console.log(`Ejecutando descarga: ${ytDlpCommand}`);
+        stream.pipe(writeStream);
 
-    exec(ytDlpCommand, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error de yt-dlp: ${error.message}`);
-            return res.status(500).send('Error al procesar el archivo multimedia.');
-        }
-
-        if (!fs.existsSync(outputPath)) {
-            return res.status(500).send('No se pudo generar el archivo.');
-        }
-
-        res.download(outputPath, `descarga_erick.${outputExtension}`, (err) => {
-            if (err) {
-                console.error(`Error al enviar archivo: ${err}`);
-            }
-            // Limpiar archivo temporal del servidor
-            fs.unlink(outputPath, (unlinkErr) => {
-                if (unlinkErr) console.error(unlinkErr);
+        writeStream.on('finish', () => {
+            res.download(outputPath, `descarga_erick.${outputExtension}`, (err) => {
+                if (err) console.error(`Error al enviar archivo: ${err}`);
+                fs.unlink(outputPath, (unlinkErr) => {
+                    if (unlinkErr) console.error(unlinkErr);
+                });
             });
         });
-    });
+
+        stream.on('error', (err) => {
+            console.error('Error en el stream de YouTube:', err);
+            if (!res.headersSent) {
+                res.status(500).send('Error al procesar el archivo multimedia.');
+            }
+        });
+
+    } catch (error) {
+        console.error(`Error general de la API: ${error.message}`);
+        return res.status(500).send('Error al procesar el archivo multimedia.');
+    }
 });
 
 app.listen(PORT, () => {
