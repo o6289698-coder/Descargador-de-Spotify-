@@ -1,51 +1,39 @@
 const express = require('express');
-const { exec } = require('child_process');
+const ytdl = require('@distube/ytdl-core');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
 app.use(express.static(path.join(__dirname)));
 
-app.get('/download', (req, res) => {
+app.get('/download', async (req, res) => {
     const videoUrl = req.query.url;
     const format = req.query.format || 'mp4';
 
-    if (!videoUrl) {
-        return res.status(400).send('Falta el enlace de YouTube.');
+    if (!ytdl.validateURL(videoUrl)) {
+        return res.status(400).send('Enlace de YouTube no válido.');
     }
 
-    console.log(`Procesando con yt-dlp: ${videoUrl} [${format}]`);
-    
-    const outputId = Date.now();
-    const ext = format === 'mp3' ? 'mp3' : 'mp4';
-    const outputPath = path.join(__dirname, `output_${outputId}.${ext}`);
+    try {
+        console.log(`Obteniendo info para: ${videoUrl} [${format}]`);
+        const info = await ytdl.getInfo(videoUrl);
+        const title = info.videoDetails.title.replace(/[^\w\s]/gi, ''); // Limpiar caracteres especiales del título
 
-    const cookiesParam = fs.existsSync(path.join(__dirname, 'cookies.txt')) ? `--cookies cookies.txt` : '';
-    
-    let command = '';
-    if (format === 'mp3') {
-        command = `yt-dlp ${cookiesParam} -x --audio-format mp3 -o "${outputPath}" "${videoUrl}"`;
-    } else {
-        command = `yt-dlp ${cookiesParam} -f "best[ext=mp4]/best" -o "${outputPath}" "${videoUrl}"`;
-    }
-
-    exec(command, (error, stdout, stderr) => {
-        if (error) {
-            console.error(`Error de ejecución: ${error.message}`);
-            return res.status(500).send('Error al procesar el archivo multimedia.');
-        }
-
-        if (fs.existsSync(outputPath)) {
-            res.download(outputPath, `descarga_erick.${ext}`, (err) => {
-                if (err) console.error(`Error al enviar archivo: ${err}`);
-                fs.unlink(outputPath, () => {});
-            });
+        if (format === 'mp3') {
+            res.header('Content-Disposition', `attachment; filename="${title}.mp3"`);
+            res.header('Content-Type', 'audio/mpeg');
+            ytdl(videoUrl, { quality: 'highestaudio', filter: 'audioonly' }).pipe(res);
         } else {
-            res.status(500).send('No se generó el archivo de salida.');
+            res.header('Content-Disposition', `attachment; filename="${title}.mp4"`);
+            res.header('Content-Type', 'video/mp4');
+            ytdl(videoUrl, { quality: 'highest' }).pipe(res);
         }
-    });
+
+    } catch (error) {
+        console.error(`Error procesando video: ${error.message}`);
+        res.status(500).send('Error al procesar el multimedia en el servidor. Es posible que YouTube haya bloqueado temporalmente la IP.');
+    }
 });
 
 app.listen(PORT, () => {
