@@ -1,4 +1,4 @@
-const express = express = require('express');
+const express = require('express');
 const path = require('path');
 const https = require('https');
 
@@ -15,7 +15,6 @@ app.get('/download', (req, res) => {
         return res.status(400).send('Falta el enlace de YouTube.');
     }
 
-    // Extraer el ID del video de YouTube de forma segura
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = videoUrl.match(regExp);
     const videoId = (match && match[2].length === 11) ? match[2] : null;
@@ -26,16 +25,10 @@ app.get('/download', (req, res) => {
 
     console.log(`Redirigiendo descarga para ID: ${videoId} [${format}]`);
 
-    // Usamos una API externa pública y estable para proveer el stream multimedia sin bloqueos en Render
     if (format === 'mp3') {
-        // Redirigir a un servicio público de conversión de audio
         const apiAudioUrl = `https://p.oceanserver.net/ajax/download.php?copyright=0&format=mp3&url=${encodeURIComponent(videoUrl)}`;
         return res.redirect(apiAudioUrl);
     } else {
-        // Redirigir a un servicio público de descarga de video
-        const apiVideoUrl = `https://co.wuk.sh/api/json`;
-        
-        // Petición POST a la API pública de Cobalt (muy estable para descargas limpias sin anuncios)
         const data = JSON.stringify({
             url: videoUrl,
             vQuality: '720'
