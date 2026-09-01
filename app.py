@@ -16,9 +16,9 @@ def search():
         return jsonify([])
     
     try:
-        # Ampliamos la búsqueda utilizando la API global de Deezer / catálogos abiertos de streaming
+        # Ampliamos la búsqueda a 15 opciones para dar mayor variedad de resultados
         encoded_query = urllib.request.quote(query)
-        url = f"https://api.deezer.com/search?q={encoded_query}&limit=15"
+        url = f"https://itunes.apple.com/search?term={encoded_query}&entity=song&limit=15"
         
         req = urllib.request.Request(
             url, 
@@ -29,18 +29,16 @@ def search():
             data = json.loads(response.read().decode())
             results = []
             
-            for item in data.get('data', []):
-                track_title = item.get('title', 'Sin título')
-                artist_name = item.get('artist', {}).get('name', 'Artista desconocido')
-                preview_url = item.get('preview', '') # Vista previa o flujo de audio
-                link = item.get('link', '')
+            for item in data.get('results', []):
+                track_name = item.get('trackName', 'Sin título')
+                artist_name = item.get('artistName', 'Artista desconocido')
+                track_view_url = item.get('trackViewUrl', '') # Enlace completo a la pista
                 
-                # Priorizamos elementos que tengan pista de audio fluida
-                if preview_url:
+                if track_name:
                     results.append({
-                        'title': f"{track_title} - {artist_name}",
-                        'url': preview_url,
-                        'web_link': link
+                        'title': f"{track_name} - {artist_name}",
+                        'query_term': f"{track_name} {artist_name}",
+                        'full_link': track_view_url
                     })
                 
             return jsonify(results)
