@@ -1,7 +1,6 @@
 const express = require('express');
-const { Innertube } = require('youtubei.js');
+const ytdl = require('@distube/ytdl-core');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,46 +11,37 @@ app.get('/download', async (req, res) => {
     const videoUrl = req.query.url;
     const format = req.query.format || 'mp4';
 
-    if (!videoUrl) {
-        return res.status(400).send('Falta el enlace de YouTube.');
+    if (!videoUrl || !ytdl.validateURL(videoUrl)) {
+        return res.status(400).send('Enlace de YouTube no válido.');
     }
 
     try {
-        console.log(`Iniciando descarga por API para: ${videoUrl} [${format}]`);
-        const youtube = await Innertube.create();
+        console.log(`Procesando descarga para: ${videoUrl} [${format}]`);
         
-        // Extraer ID o usar URL directa
-        const stream = await youtube.download(videoUrl, {
-            type: format === 'mp3' ? 'audio' : 'video',
-            quality: 'best',
-            format: format === 'mp3' ? 'mp4' : 'mp4' // Contenedor seguro
-        });
+        const info = await ytdl.getInfo(videoUrl);
+        const title = info.videoDetails.title.replace(/[\/\\?%*:|"<>]/g, ''); // Limpiar caracteres prohibidos en nombres de archivos
+        
+        const extension = format === 'mp3' ? 'mp3' : 'mp4';
+        const filterType = format === 'mp3' ? 'audioonly' : 'videoandaudio';
 
-        const outputExtension = format === 'mp3' ? 'mp3' : 'mp4';
-        const outputPath = path.join(__dirname, `output_${Date.now()}.${outputExtension}`);
-        const writeStream = fs.createWriteStream(outputPath);
+        res.header('Content-Disposition', `attachment; filename="${encodeURIComponent(title)}.${extension}"`);
+        res.header('Content-Type', format === 'mp3' ? 'audio/mpeg' : 'video/mp4');
 
-        stream.pipe(writeStream);
-
-        writeStream.on('finish', () => {
-            res.download(outputPath, `descarga_erick.${outputExtension}`, (err) => {
-                if (err) console.error(`Error al enviar archivo: ${err}`);
-                fs.unlink(outputPath, (unlinkErr) => {
-                    if (unlinkErr) console.error(unlinkErr);
-                });
-            });
-        });
-
-        stream.on('error', (err) => {
-            console.error('Error en el stream de YouTube:', err);
+        ytdl(videoUrl, {
+            filter: filterType,
+            quality: 'highest',
+        }).on('error', (err) => {
+            console.error('Error durante el streaming:', err);
             if (!res.headersSent) {
                 res.status(500).send('Error al procesar el archivo multimedia.');
             }
-        });
+        }).pipe(res);
 
     } catch (error) {
-        console.error(`Error general de la API: ${error.message}`);
-        return res.status(500).send('Error al procesar el archivo multimedia.');
+        console.error(`Error general del servidor: ${error.message}`);
+        if (!res.headersSent) {
+            res.status(500).send('Error al procesar el archivo multimedia.');
+        }
     }
 });
 
