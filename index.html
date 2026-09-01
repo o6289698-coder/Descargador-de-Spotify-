@@ -116,11 +116,8 @@
             }
 
             loader.style.display = 'block';
-
-            // Redirige directamente al endpoint del servidor que configuramos en server.js
             window.location.href = `/download?url=${encodeURIComponent(url)}&format=${format}`;
 
-            // Ocultar mensaje de carga después de unos segundos
             setTimeout(() => {
                 loader.style.display = 'none';
             }, 6000);
@@ -129,3 +126,6 @@
 
 </body>
 </html>
+
+
+    
