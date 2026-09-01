@@ -139,7 +139,6 @@
             transform: scale(1.2);
         }
 
-        /* Mensaje integrado en la página */
         .love-message {
             color: #38bdf8;
             font-size: 15px;
@@ -212,7 +211,6 @@
         const heartBtn = document.getElementById('heartBtn');
         const loveMessage = document.getElementById('loveMessage');
 
-        // Mostrar el mensaje romántico integrado en la página al hacer clic
         heartBtn.addEventListener('click', () => {
             loveMessage.style.display = loveMessage.style.display === 'block' ? 'none' : 'block';
         });
@@ -236,19 +234,25 @@
             processBtn.textContent = 'Procesando...';
             processBtn.disabled = true;
 
+            // Reproduce el video perfectamente en el reproductor integrado
             videoPreview.src = `https://www.youtube.com/embed/${videoId}`;
-            downloadLink.href = `/download?url=${encodeURIComponent(url)}&format=${format}`;
+            
+            // Asocia la descarga de manera limpia y directa utilizando el ID extraído
+            if (format === 'mp3') {
+                downloadLink.href = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp3`;
+            } else {
+                downloadLink.href = `https://loader.to/api/button/?url=https://www.youtube.com/watch?v=${videoId}&f=mp4`;
+            }
+
             downloadLink.textContent = `Descargar ${format.toUpperCase()}`;
 
             setTimeout(() => {
                 previewContainer.style.display = 'block';
                 processBtn.textContent = 'Procesar';
                 processBtn.disabled = false;
-            }, 1000);
+            }, 800);
         });
     </script>
 
 </body>
 </html>
-
-            
