@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 app.use(express.static(path.join(__dirname)));
 
@@ -22,7 +22,6 @@ app.get('/download', (req, res) => {
     const ext = format === 'mp3' ? 'mp3' : 'mp4';
     const outputPath = path.join(__dirname, `output_${outputId}.${ext}`);
 
-    // Comando yt-dlp (si tienes un archivo cookies.txt en tu repo, usará --cookies cookies.txt automáticamente)
     const cookiesParam = fs.existsSync(path.join(__dirname, 'cookies.txt')) ? `--cookies cookies.txt` : '';
     
     let command = '';
@@ -41,7 +40,7 @@ app.get('/download', (req, res) => {
         if (fs.existsSync(outputPath)) {
             res.download(outputPath, `descarga_erick.${ext}`, (err) => {
                 if (err) console.error(`Error al enviar archivo: ${err}`);
-                fs.unlink(outputPath, () => {}); // Limpiar archivo local después de enviar
+                fs.unlink(outputPath, () => {});
             });
         } else {
             res.status(500).send('No se generó el archivo de salida.');
