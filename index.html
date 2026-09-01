@@ -90,7 +90,6 @@
             cursor: not-allowed;
         }
 
-        /* Vista previa del video */
         .preview-container {
             margin-top: 20px;
             display: none;
@@ -124,10 +123,13 @@
             background-color: #059669;
         }
 
+        .heart-section {
+            margin: 15px 0;
+        }
+
         .heart {
             font-size: 26px;
             color: #ef4444;
-            margin: 15px 0;
             cursor: pointer;
             display: inline-block;
             transition: transform 0.2s;
@@ -135,6 +137,21 @@
 
         .heart:hover {
             transform: scale(1.2);
+        }
+
+        /* Mensaje integrado en la página */
+        .love-message {
+            color: #38bdf8;
+            font-size: 15px;
+            font-style: italic;
+            margin-top: 8px;
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .divider {
@@ -168,13 +185,15 @@
             <button class="btn-process" id="processBtn">Procesar</button>
         </div>
 
-        <!-- Vista previa que aparece al procesar -->
         <div class="preview-container" id="previewContainer">
             <iframe id="videoPreview" src="" allowfullscreen></iframe>
             <a href="#" id="downloadLink" class="btn-download" target="_blank">Descargar Archivo</a>
         </div>
 
-        <div class="heart" id="heartBtn" title="Haz clic">❤️</div>
+        <div class="heart-section">
+            <div class="heart" id="heartBtn" title="Haz clic">❤️</div>
+            <div class="love-message" id="loveMessage">Te amo Deyra</div>
+        </div>
 
         <hr class="divider">
 
@@ -191,13 +210,13 @@
         const videoPreview = document.getElementById('videoPreview');
         const downloadLink = document.getElementById('downloadLink');
         const heartBtn = document.getElementById('heartBtn');
+        const loveMessage = document.getElementById('loveMessage');
 
-        // Función interactiva del corazón dedicado a Deyra
+        // Mostrar el mensaje romántico integrado en la página al hacer clic
         heartBtn.addEventListener('click', () => {
-            alert('Te amo Deyra ❤️');
+            loveMessage.style.display = loveMessage.style.display === 'block' ? 'none' : 'block';
         });
 
-        // Extraer ID de YouTube para la vista previa
         function extractYouTubeId(url) {
             const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
             const match = url.match(regExp);
@@ -217,10 +236,7 @@
             processBtn.textContent = 'Procesando...';
             processBtn.disabled = true;
 
-            // Mostrar la vista previa incrustada en la tarjeta
             videoPreview.src = `https://www.youtube.com/embed/${videoId}`;
-            
-            // Configurar el enlace de descarga real que apunta al backend seguro
             downloadLink.href = `/download?url=${encodeURIComponent(url)}&format=${format}`;
             downloadLink.textContent = `Descargar ${format.toUpperCase()}`;
 
@@ -234,3 +250,5 @@
 
 </body>
 </html>
+
+            
