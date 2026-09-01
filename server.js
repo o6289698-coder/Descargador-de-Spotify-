@@ -21,10 +21,11 @@ app.get('/download', (req, res) => {
 
     let ytDlpCommand = '';
     if (format === 'mp3') {
-        ytDlpCommand = `yt-dlp -x --audio-format mp3 -o "${outputPath}" "${videoUrl}"`;
+        // Comando optimizado para MP3
+        ytDlpCommand = `yt-dlp --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -x --audio-format mp3 -o "${outputPath}" "${videoUrl}"`;
     } else {
-        // Comando robusto para asegurar que combine video y audio correctamente en un MP4 estándar
-        ytDlpCommand = `yt-dlp -f "bv*[ext=mp4]+ba[ext=m4a]/b[ext=mp4] / b" --merge-output-format mp4 -o "${outputPath}" "${videoUrl}"`;
+        // Comando seguro y estable para MP4 combinando streams de manera genérica
+        ytDlpCommand = `yt-dlp --user-agent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" -f "best[ext=mp4]/best" -o "${outputPath}" "${videoUrl}"`;
     }
 
     console.log(`Ejecutando descarga: ${ytDlpCommand}`);
@@ -43,7 +44,7 @@ app.get('/download', (req, res) => {
             if (err) {
                 console.error(`Error al enviar archivo: ${err}`);
             }
-            // Eliminar el archivo temporal del servidor después de enviarlo
+            // Limpiar archivo temporal del servidor
             fs.unlink(outputPath, (unlinkErr) => {
                 if (unlinkErr) console.error(unlinkErr);
             });
